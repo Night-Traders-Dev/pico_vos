@@ -46,28 +46,28 @@ class VirtualFS:
     def verify_and_sync_filesystem(self):
         """Verify and synchronize the virtual filesystem with the actual current directory."""
         current_files = self.get_current_directory_files(os.getcwd())
-        virtual_files = self.list_directory("/")
+        virtual_files = self.filesystem
 
         # Remove entries no longer in the actual directory
         for virtual_path in virtual_files:
             if virtual_path not in current_files:
-                self.delete(f"/{virtual_path}")
+                self.delete(f"{virtual_path}")
 
         # Add new entries from the current directory
         for current_path in current_files:
             if current_path not in virtual_files:
                 full_path = os.path.join(os.getcwd(), current_path)
                 if os.path.isdir(full_path):
-                    self.create_directory(f"/{current_path}")
+                    self.create_directory(f"{current_path}")
                 else:
                     try:
                         with open(full_path, "r", encoding="utf-8") as f:
                             content = f.read()
-                        self.create_file(f"/{current_path}", content)
+                        self.create_file(f"{current_path}", content)
                     except UnicodeDecodeError:
                         with open(full_path, "rb") as f:
                             content = f.read()
-                        self.create_file(f"/{current_path}", content, is_binary=True)
+                        self.create_file(f"{current_path}", content, is_binary=True)
 
     def get_current_directory_files(self, path):
         """List files and directories in the current directory."""
