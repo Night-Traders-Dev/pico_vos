@@ -1,9 +1,10 @@
 import time
 
 class VirtualShell:
-    def __init__(self, fs, kernel):
+    def __init__(self, fs, kernel, user):
         self.fs = fs
         self.kernel = kernel
+        self.user = user
 
     def start(self):
         print("vShell: Welcome to the Virtual Shell!")
@@ -29,7 +30,7 @@ class VirtualShell:
         print("  rm [path]             - Delete a file or directory")
         print("  uptime                - Show the uptime of vOS")
         print("  ps                    - List active processes")
-        print("  kill [process_name]   - Kill a process by name")
+        print("  kill [process_name]   - Kill a process by name (user restrictions apply)")
 
     def execute_command(self, command):
         parts = command.split()
@@ -40,7 +41,6 @@ class VirtualShell:
         try:
             if cmd == "ls":
                 path = args[0] if args else "/"
-                # List directory contents using VirtualFS's method
                 directory_contents = self.fs.list_directory(path)
                 if directory_contents:
                     print("\n".join(directory_contents))
@@ -48,7 +48,6 @@ class VirtualShell:
                     print(f"Error: Directory '{path}' not found.")
             elif cmd == "cat":
                 path = args[0]
-                # Read and display file content
                 try:
                     content = self.fs.read_file(path)
                     print(content)
@@ -56,33 +55,36 @@ class VirtualShell:
                     print(f"Error: File '{path}' not found.")
             elif cmd == "touch":
                 path = args[0]
-                # Create an empty file
                 self.fs.create_file(path, content="", is_binary=False)
                 print(f"File '{path}' created.")
             elif cmd == "mkdir":
                 path = args[0]
-                # Create a directory
                 self.fs.create_directory(path)
                 print(f"Directory '{path}' created.")
             elif cmd == "rm":
                 path = args[0]
-                # Delete a file or directory
                 self.fs.delete(path)
                 print(f"File/Directory '{path}' deleted.")
             elif cmd == "uptime":
-                uptime = self.kernel.uptime()  # Assuming kernel has uptime method
+                uptime = self.kernel.uptime()
                 print(f"vOS Uptime: {uptime:.2f} seconds")
             elif cmd == "ps":
-                processes = self.kernel.list_processes()  # Assuming kernel has list_processes method
+                processes = self.kernel.list_processes()
                 for process in processes:
-                    print(f"Process: {process['name']}, Status: {process['status']}")
+                    print(f"Process: {process['name']}, Status: {process['status']}, User: {process.get('user', 'unknown')}")
             elif cmd == "kill":
                 process_name = args[0]
-                if process_name == "shell" or process_name == "kernel" or process_name == "filesystem":
-                    print(f"Cannot kill critical system process: {process_name}")
+                process = next((p for p in self.kernel.processes if p["name"] == process_name), None)
+                if not process:
+                    print(f"Process '{process_name}' not found.")
+                elif process["user"] == "kernel":
+                    print(f"Cannot kill kernel process: {process_name}")
+                elif process["user"] == "root" and process_name not in ["shell", "filesystem"]:
+                    print(f"Cannot kill root-level process: {process_name}")
+                elif self.kernel.kill_process(process_name, self.user):
+                    print(f"Process '{process_name}' killed.")
                 else:
-                    if self.kernel.kill_process(process_name):  # Assuming kernel has kill_process method
-                        print(f"Process {process_name} killed.")
+                    print(f"Failed to kill process '{process_name}'.")
             else:
                 print(f"Unknown command: {cmd}")
         except IndexError:
@@ -92,6 +94,6 @@ class VirtualShell:
 
     def exit_vos(self):
         print("vOS will now shut down...")
-        self.kernel.shutdown()  # Assuming kernel has shutdown method
-        time.sleep(5)  # Wait for 5 seconds before exiting
-        exit(0)  # Exit the Python script completely
+        self.kernel.shutdown()
+        time.sleep(1)  # Brief delay for graceful shutdown
+        exit(0)

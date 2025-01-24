@@ -7,18 +7,22 @@ class VirtualKernel:
         self.start_time = time.monotonic()  # Record the start time of vOS
 
     # Process Management
-    def create_process(self, name, func, system=False):
+    def create_process(self, name, func, user, system=False):
         """Create a process and add it to the process list."""
         self.processes.append({
             "name": name,
             "func": func,
             "status": "running" if system else "ready",
+            "user": user,  # The owner of the process (kernel, root, user)
             "system": system  # True if the process is critical and cannot be killed
         })
 
     def list_processes(self):
-        """List all processes with their name, status, and system flag."""
-        return [{"name": p["name"], "status": p["status"]} for p in self.processes]
+        """List all processes with their name, status, and owner."""
+        return [
+            {"name": p["name"], "status": p["status"], "user": p["user"]}
+            for p in self.processes
+        ]
 
     def execute_process(self, name):
         """Execute a process by name."""
@@ -36,16 +40,20 @@ class VirtualKernel:
                 return
         print(f"Process '{name}' not found.")
 
-    def kill_process(self, name):
-        """Kill a process by name."""
+    def kill_process(self, name, user):
+        """Kill a process by name, enforcing user permissions."""
         for process in self.processes:
             if process["name"] == name:
-                if process["system"]:
-                    print(f"Cannot kill critical system process '{name}'.")
+                if process["user"] in ["kernel", "root"] and user == "user":
+                    print(f"Permission denied: '{user}' cannot kill '{process['user']}' process '{name}'.")
                     return False
-                print(f"Process '{name}' has been killed.")
-                self.processes.remove(process)  # Fixed indentation
-                return True
+                if process["user"] == "kernel" and user == "root":
+                    print(f"Permission denied: 'root' cannot kill kernel process '{name}'.")
+                    return False
+                if user == "kernel" or process["user"] == user or user == "root":
+                    print(f"Process '{name}' owned by '{process['user']}' has been killed by '{user}'.")
+                    self.processes.remove(process)
+                    return True
         print(f"Process '{name}' not found.")
         return False
 
@@ -71,3 +79,6 @@ class VirtualKernel:
 
     def shutdown(self):
         self.fs.save_filesystem()
+        self.kill_process("filesystem", "kernel")
+        self.kill_process("shell", "kernel")
+        self.kill_process("kernel", "kernel")

@@ -7,17 +7,18 @@ import sys
 class vOS:
     def __init__(self):
         print("Initializing vOS...")
+        self.user = "user"
         self.fs = VirtualFS()
         self.kernel = VirtualKernel(self.fs)
-        self.shell = VirtualShell(self.fs, self.kernel)
+        self.shell = VirtualShell(self.fs, self.kernel, self.user)
 
         # Register core system processes
         print("Starting Kernel Process...")
-        self.kernel.create_process("kernel", self.kernel_process, system=True)
+        self.kernel.create_process("kernel", self.kernel_process, user="kernel", system=True)
         print("Kernel: Starting VirtualFS...")
-        self.kernel.create_process("filesystem", self.fs_process, system=True)
+        self.kernel.create_process("filesystem", self.fs_process, user="kernel", system=True)
         print("Kernel: Starting VirtualShell...")
-        self.kernel.create_process("shell", self.shell_process, system=True)
+        self.kernel.create_process("shell", self.shell_process, user="kernel", system=True)
 
     def fs_process(self):
         print("Filesystem process is running.")
@@ -40,10 +41,9 @@ class vOS:
         print("vOS running. Type 'exit' to shut down.")
         while True:
             # Check if the shell process is still running
-            shell_process = next((p for p in self.kernel.list_processes() if p['name'] == 'shell'), None)
-            if not shell_process or shell_process['status'] != 'running':
+            shell_process = next((p for p in self.kernel.list_processes() if p["name"] == "shell"), None)
+            if not shell_process or shell_process["status"] != "running":
                 break  # Exit the loop once the shell process finishes
-
             else:
                 VirtualShell.start(self.shell)
             time.sleep(1)  # Check every second
