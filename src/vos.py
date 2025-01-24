@@ -14,21 +14,16 @@ class vOS:
 
         # Register core system processes
         print("Starting Kernel Process...")
-        self.kernel.create_process("kernel", self.kernel_process, user="kernel", system=True)
+        self.kernel.create_process("kernel", self.proc_msg("kernel"), user="kernel", system=True)
         print("Kernel: Starting VirtualFS...")
-        self.kernel.create_process("filesystem", self.fs_process, user="kernel", system=True)
+        self.kernel.create_process("filesystem", self.proc_msg("filesystem"), user="kernel", system=True)
         print("Kernel: Starting VirtualShell...")
-        self.kernel.create_process("shell", self.shell_process, user="kernel", system=True)
+        self.kernel.create_process("shell", self.proc_msg("shell"), user="kernel", system=True)
 
-    def fs_process(self):
-        print("Filesystem process is running.")
-
-    def kernel_process(self):
-        print("Kernel process is running.")
-
-    def shell_process(self):
-        print("Shell process is running.")
-        self.shell.start()
+    def proc_msg(self, proc):
+        print(f"{proc} Running")
+        if proc == "shell":
+            self.shell.start()
 
     def run(self):
         print("Starting vOS...")
