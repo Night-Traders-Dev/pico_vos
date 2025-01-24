@@ -1,5 +1,6 @@
 import time
 
+
 class VirtualShell:
     def __init__(self, fs, kernel, user):
         self.fs = fs
@@ -29,7 +30,7 @@ class VirtualShell:
         print("  mkdir [path]          - Create a directory")
         print("  rm [path]             - Delete a file or directory")
         print("  uptime                - Show the uptime of vOS")
-        print("  ps                    - List active processes")
+        print("  ps                    - List active processes with their status and runtime")
         print("  kill [process_name]   - Kill a process by name (user restrictions apply)")
 
     def execute_command(self, command):
@@ -47,6 +48,9 @@ class VirtualShell:
                 else:
                     print(f"Error: Directory '{path}' not found.")
             elif cmd == "cat":
+                if not args:
+                    print("Error: Missing file path.")
+                    return
                 path = args[0]
                 try:
                     content = self.fs.read_file(path)
@@ -54,14 +58,23 @@ class VirtualShell:
                 except FileNotFoundError:
                     print(f"Error: File '{path}' not found.")
             elif cmd == "touch":
+                if not args:
+                    print("Error: Missing file path.")
+                    return
                 path = args[0]
-                self.fs.create_file(path, content="", is_binary=False)
+                self.fs.create_file(path, content="")
                 print(f"File '{path}' created.")
             elif cmd == "mkdir":
+                if not args:
+                    print("Error: Missing directory path.")
+                    return
                 path = args[0]
                 self.fs.create_directory(path)
                 print(f"Directory '{path}' created.")
             elif cmd == "rm":
+                if not args:
+                    print("Error: Missing file or directory path.")
+                    return
                 path = args[0]
                 self.fs.delete(path)
                 print(f"File/Directory '{path}' deleted.")
@@ -70,23 +83,25 @@ class VirtualShell:
                 print(f"vOS Uptime: {uptime:.2f} seconds")
             elif cmd == "ps":
                 processes = self.kernel.list_processes()
+                if not processes:
+                    print("No active processes.")
                 for process in processes:
-                    print(f"Process: {process['name']}, Status: {process['status']}, User: {process.get('user', 'unknown')}")
+                    print(
+                        f"Process: {process['name']}, Status: {process['status']}, "
+                        f"User: {process['user']}, Runtime: {process['runtime']} seconds"
+                    )
             elif cmd == "kill":
+                if not args:
+                    print("Error: Missing process name.")
+                    return
                 process_name = args[0]
-                process = next((p for p in self.kernel.processes if p["name"] == process_name), None)
-                if not process:
-                    print(f"Process '{process_name}' not found.")
-                elif process["user"] == "kernel":
-                    print(f"Cannot kill kernel process: {process_name}")
-                elif process["user"] == "root" and process_name not in ["shell", "filesystem"]:
-                    print(f"Cannot kill root-level process: {process_name}")
-                elif self.kernel.kill_process(process_name, self.user):
+                if self.kernel.kill_process(process_name, self.user):
                     print(f"Process '{process_name}' killed.")
                 else:
                     print(f"Failed to kill process '{process_name}'.")
             else:
                 print(f"Unknown command: {cmd}")
+                print("Type 'help' for a list of commands.")
         except IndexError:
             print("Error: Missing arguments.")
         except Exception as e:
@@ -96,4 +111,5 @@ class VirtualShell:
         print("vOS will now shut down...")
         self.kernel.shutdown()
         time.sleep(1)  # Brief delay for graceful shutdown
-        exit(0)
+        import sys
+        sys.exit(0)

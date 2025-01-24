@@ -14,15 +14,30 @@ class VirtualKernel:
             "func": func,
             "status": "running" if system else "ready",
             "user": user,  # The owner of the process (kernel, root, user)
-            "system": system  # True if the process is critical and cannot be killed
+            "system": system,  # True if the process is critical and cannot be killed
+            "start_time": None,  # Track when the process starts running
+            "runtime": 0  # Total runtime in seconds
         })
 
     def list_processes(self):
-        """List all processes with their name, status, and owner."""
-        return [
-            {"name": p["name"], "status": p["status"], "user": p["user"]}
-            for p in self.processes
-        ]
+        """List all processes with their name, status, owner, and runtime."""
+        self.update_process_runtime()
+        processes_list = []
+        for process in self.processes:
+            processes_list.append({
+                "name": process["name"],
+                "status": process["status"],
+                "user": process["user"],
+                "runtime": round(process["runtime"], 2)  # Rounded to 2 decimals
+            })
+        return processes_list
+
+    def update_process_runtime(self):
+        """Update the runtime of all running processes."""
+        current_time = time.monotonic()
+        for process in self.processes:
+            if process["status"] == "running" and process["start_time"]:
+                process["runtime"] = current_time - process["start_time"]
 
     def execute_process(self, name):
         """Execute a process by name."""
@@ -30,8 +45,9 @@ class VirtualKernel:
             if process["name"] == name:
                 if process["status"] != "running":  # Prevent re-execution of system processes
                     process["status"] = "running"
+                    process["start_time"] = time.monotonic()  # Set the process start time
                     try:
-                        print(f'{process["func"]}')
+                        print(f'Executing process: {process["name"]}')
                         process["func"]()
                         if not process["system"]:
                             process["status"] = "completed"
@@ -60,7 +76,7 @@ class VirtualKernel:
 
     def uptime(self):
         """Calculate uptime in seconds."""
-        return time.monotonic() - self.start_time
+        return round(time.monotonic() - self.start_time, 2)
 
     # Filesystem Management
     def create_file(self, path, content=""):
@@ -79,7 +95,8 @@ class VirtualKernel:
         return self.fs.read_file(path)
 
     def shutdown(self):
+        """Shutdown the kernel and all processes."""
         self.fs.save_filesystem()
-        self.kill_process("filesystem", "kernel")
-        self.kill_process("shell", "kernel")
-        self.kill_process("kernel", "kernel")
+        for process in list(self.processes):  # Use a copy to avoid modification during iteration
+            self.kill_process(process["name"], "kernel")
+        print("Kernel has shut down.")
