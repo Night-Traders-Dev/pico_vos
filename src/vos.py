@@ -35,6 +35,8 @@ class vOS:
             )
             if not shell_process or shell_process["status"] != "running":
                 break  # Exit once the shell process finishes
+            else:
+                VirtualShell.start(self.shell)
             time.sleep(1)  # Check the process status every second
 
         # Shutdown the kernel and the system after exiting the shell
