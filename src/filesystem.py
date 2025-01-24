@@ -7,82 +7,74 @@ class VirtualFS:
         self.load_filesystem()
 
     def load_filesystem(self):
-        """Load or initialize the filesystem from the current directory."""
-        if self.fs_file not in os.listdir():
-            # If fs_tree.txt doesn't exist, initialize it
+        """Load or initialize the filesystem."""
+        if not os.path.exists(self.fs_file):
+            # Initialize if fs_tree.txt doesn't exist
             self.filesystem = {"/": {"type": "dir", "content": {}}}
             self.populate_from_current_directory(os.getcwd())
-            self.save_filesystem()  # Save the populated filesystem to fs_tree.txt
+            self.save_filesystem()
         else:
-            # If fs_tree.txt exists, load and verify contents
+            # Load and verify the filesystem
             with open(self.fs_file, "r") as f:
                 data = f.read()
                 self.filesystem = self.parse_filesystem(data)
-
-            # Verify that the contents of the filesystem match the current directory
-            self.verify_and_sync_filesystem(os.getcwd())
+            self.verify_and_sync_filesystem()
 
     def save_filesystem(self):
         """Save the virtual filesystem to the fs_tree.txt file."""
         with open(self.fs_file, "w") as f:
-            f.write(self.serialize_filesystem(self.filesystem))                                      
+            f.write(self.serialize_filesystem(self.filesystem))
 
     def populate_from_current_directory(self, path):
-        """Recursively populate the virtual filesystem from the current directory."""
-        for root, dirs, files in os.walk(path):                                                      
-            # Create directories
+        """Populate the virtual filesystem using the current directory."""
+        for root, dirs, files in os.walk(path):
+            rel_root = os.path.relpath(root, start=path).replace(os.sep, "/")
+            virtual_root = "/" if rel_root == "." else f"/{rel_root}"
             for dir_name in dirs:
-                full_dir_path = os.path.join(root, dir_name)
-                virtual_path = os.path.relpath(full_dir_path, start=os.getcwd()).replace(os.sep, "/")
-                self.create_directory("/" + virtual_path)
-
-            # Create files
+                self.create_directory(f"{virtual_root}/{dir_name}")
             for file_name in files:
-                full_file_path = os.path.join(root, file_name)
-                virtual_path = os.path.relpath(full_file_path, start=os.getcwd()).replace(os.sep, "/")
+                full_path = os.path.join(root, file_name)
                 try:
-                    with open(full_file_path, "r", encoding="utf-8") as f:
-                        content = f.read()  # Try reading the file as text (UTF-8)
-                    self.create_file("/" + virtual_path, content)
+                    with open(full_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    self.create_file(f"{virtual_root}/{file_name}", content)
                 except UnicodeDecodeError:
-                    # If UTF-8 decoding fails, treat the file as binary
-                    with open(full_file_path, "rb") as f:
-                        content = f.read()  # Read the file as bytes
-                    self.create_file("/" + virtual_path, content, is_binary=True)
+                    with open(full_path, "rb") as f:
+                        content = f.read()
+                    self.create_file(f"{virtual_root}/{file_name}", content, is_binary=True)
 
-    def verify_and_sync_filesystem(self, path):
-        """Verify and sync the virtual filesystem with the current directory's structure."""
-        current_files = self.get_current_directory_files(path)
-        virtual_files = self.list_directory("/")  # List of files in the virtual filesystem (root dir)
+    def verify_and_sync_filesystem(self):
+        """Verify and synchronize the virtual filesystem with the actual current directory."""
+        current_files = self.get_current_directory_files(os.getcwd())
+        virtual_files = self.list_directory("/")
 
-        # Sync files and directories
+        # Remove entries no longer in the actual directory
         for virtual_path in virtual_files:
             if virtual_path not in current_files:
-                # Remove files or directories that no longer exist in the current directory
-                self.delete("/" + virtual_path)
+                self.delete(f"/{virtual_path}")
 
+        # Add new entries from the current directory
         for current_path in current_files:
             if current_path not in virtual_files:
-                # Add files or directories that exist in the current directory but not in the virtual filesystem
-                full_path = os.path.join(path, current_path)
+                full_path = os.path.join(os.getcwd(), current_path)
                 if os.path.isdir(full_path):
-                    self.create_directory("/" + current_path)
+                    self.create_directory(f"/{current_path}")
                 else:
                     try:
                         with open(full_path, "r", encoding="utf-8") as f:
                             content = f.read()
-                        self.create_file("/" + current_path, content)
+                        self.create_file(f"/{current_path}", content)
                     except UnicodeDecodeError:
                         with open(full_path, "rb") as f:
                             content = f.read()
-                        self.create_file("/" + current_path, content, is_binary=True)
+                        self.create_file(f"/{current_path}", content, is_binary=True)
 
     def get_current_directory_files(self, path):
-        """Get a list of files and directories in the current directory (non-recursive)."""
+        """List files and directories in the current directory."""
         return [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f)) or os.path.isfile(os.path.join(path, f))]
 
     def parse_filesystem(self, data):
-        """Parse the filesystem data from the text file."""
+        """Parse the filesystem data from fs_tree.txt."""
         fs = {}
         lines = data.strip().split("\n")
         stack = [fs]
@@ -98,7 +90,7 @@ class VirtualFS:
         return fs
 
     def serialize_filesystem(self, fs, indent=0):
-        """Serialize the filesystem to a string format."""
+        """Convert the filesystem into a string for storage."""
         output = []
         for key, value in fs.items():
             output.append(" " * indent + f"{key}:{value['type']}")
@@ -107,7 +99,7 @@ class VirtualFS:
         return "\n".join(output)
 
     def create_file(self, path, content, is_binary=False):
-        """Create a file at the given path with the provided content."""
+        """Add a file to the virtual filesystem."""
         dirs = path.strip("/").split("/")
         current = self.filesystem["/"]["content"]
         for d in dirs[:-1]:
@@ -118,7 +110,7 @@ class VirtualFS:
         self.save_filesystem()
 
     def create_directory(self, path):
-        """Create a directory at the given path."""
+        """Add a directory to the virtual filesystem."""
         dirs = path.strip("/").split("/")
         current = self.filesystem["/"]["content"]
         for d in dirs:
@@ -130,7 +122,7 @@ class VirtualFS:
         self.save_filesystem()
 
     def list_directory(self, path="/"):
-        """List the contents of a directory."""
+        """List the contents of a virtual directory."""
         dirs = path.strip("/").split("/")
         current = self.filesystem["/"]["content"]
         for d in dirs:
@@ -140,7 +132,7 @@ class VirtualFS:
         return list(current.keys())
 
     def read_file(self, path):
-        """Read the contents of a file."""
+        """Read a file from the virtual filesystem."""
         dirs = path.strip("/").split("/")
         current = self.filesystem["/"]["content"]
         for d in dirs[:-1]:
@@ -152,7 +144,7 @@ class VirtualFS:
         return current[dirs[-1]]["content"]
 
     def delete(self, path):
-        """Delete a file or directory at the given path."""
+        """Delete a file or directory from the virtual filesystem."""
         dirs = path.strip("/").split("/")
         current = self.filesystem["/"]["content"]
         for d in dirs[:-1]:
