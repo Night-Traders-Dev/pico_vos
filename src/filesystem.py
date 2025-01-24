@@ -18,7 +18,7 @@ class VirtualFS:
             with open(self.fs_file, "r") as f:
                 data = f.read()
                 self.filesystem = self.parse_filesystem(data)
-            self.verify_and_sync_filesystem()
+#            self.verify_and_sync_filesystem()
 
     def save_filesystem(self):
         """Save the virtual filesystem to the fs_tree.txt file."""
