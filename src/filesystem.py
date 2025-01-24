@@ -3,6 +3,7 @@ import os
 class VirtualFS:
     def __init__(self, fs_file="fs_tree.txt"):
         self.fs_file = fs_file
+        self.parsedFS = {}
         self.filesystem = {}
         self.load_filesystem()
 
@@ -18,6 +19,7 @@ class VirtualFS:
             with open(self.fs_file, "r") as f:
                 data = f.read()
                 self.filesystem = self.parse_filesystem(data)
+                print(self.filesystem)
 #            self.verify_and_sync_filesystem()
 
     def save_filesystem(self):
@@ -121,15 +123,30 @@ class VirtualFS:
             current = current[d]["content"]
         self.save_filesystem()
 
-    def list_directory(self, path="/"):
-        """List the contents of a virtual directory."""
-        dirs = path.strip("/").split("/")
-        current = self.filesystem["/"]["content"]
-        for d in dirs:
-            if d not in current or current[d]["type"] != "dir":
-                raise FileNotFoundError(f"Directory '{path}' not found.")
-            current = current[d]["content"]
-        return list(current.keys())
+#    def list_directory(self, path="/"):
+#        """List the contents of a virtual directory."""
+#        dirs = path.strip("/").split("/")
+#        current = self.filesystem["/"]["content"]
+#        for d in dirs:
+#            if d not in current or current[d]["type"] != "dir":
+#                raise FileNotFoundError(f"Directory '{path}' not found.")
+#            current = current[d]["content"]
+#        return list(current.keys())
+
+    def list_directory(self, path):
+        """List the contents of a directory in the virtual filesystem."""
+        # Navigate to the specified directory in the parsed filesystem
+        current_dir = self.filesystem
+        if path != "/":
+            parts = path.strip("/").split("/")
+            for part in parts:
+                if part in current_dir and current_dir[part]["type"] == "dir":
+                    current_dir = current_dir[part]["content"]
+                else:
+                    raise FileNotFoundError(f"Directory '{path}' not found.")
+        # Return sorted list of directory contents (keys)
+#        return sorted(current_dir.keys())
+        return sorted(current_dir)
 
     def read_file(self, path):
         """Read a file from the virtual filesystem."""

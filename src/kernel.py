@@ -31,6 +31,7 @@ class VirtualKernel:
                 if process["status"] != "running":  # Prevent re-execution of system processes
                     process["status"] = "running"
                     try:
+                        print(f'{process["func"]}')
                         process["func"]()
                         if not process["system"]:
                             process["status"] = "completed"
