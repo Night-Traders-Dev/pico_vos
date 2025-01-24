@@ -21,16 +21,13 @@ class vOS:
         self.kernel.create_process("shell", self.proc_msg("shell"), user="kernel", system=True)
 
     def proc_msg(self, proc):
+        self.kernel.execute_process(proc)
         print(f"{proc} Running")
         if proc == "shell":
             self.shell.start()
 
     def run(self):
         print("Starting vOS...")
-        # Execute essential system processes
-        self.kernel.execute_process("filesystem")
-        self.kernel.execute_process("kernel")
-        self.kernel.execute_process("shell")
 
         # Let the shell process run and wait for exit
         print("vOS running. Type 'exit' to shut down.")
