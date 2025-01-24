@@ -9,7 +9,7 @@ class vOS:
         print("Initializing vOS...")
         self.fs = VirtualFS()
         self.kernel = VirtualKernel(self.fs)
-        self.shell = VirtualShell(self.kernel)
+        self.shell = VirtualShell(self.fs, self.kernel)
 
         # Register core system processes
         print("Starting Kernel Process...")

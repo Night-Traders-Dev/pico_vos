@@ -1,8 +1,9 @@
 import time
 
 class VirtualShell:
-    def __init__(self, fs):
+    def __init__(self, fs, kernel):
         self.fs = fs
+        self.kernel = kernel
 
     def start(self):
         print("vShell: Welcome to the Virtual Shell!")
