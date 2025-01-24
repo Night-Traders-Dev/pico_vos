@@ -15,7 +15,7 @@ class VirtualKernel:
             "status": "running" if system else "ready",
             "user": user,  # The owner of the process (kernel, root, user)
             "system": system,  # True if the process is critical and cannot be killed
-            "start_time": None,  # Track when the process starts running
+            "start_time": time.monotonic(),  # Track when the process starts running
             "runtime": 0  # Total runtime in seconds
         })
 

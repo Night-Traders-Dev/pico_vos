@@ -10,6 +10,7 @@ class VirtualShell:
     def start(self):
         print("vShell: Welcome to the Virtual Shell!")
         while True:
+            self.kernel.update_process_runtime()
             command = input("$ ").strip()
             if command == "exit":
                 print("Exiting vShell...")
