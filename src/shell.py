@@ -41,7 +41,9 @@ class VirtualShell:
         args = parts[1:]
         try:
             if cmd == "ls":
-                print(self.fs.filesystem)
+                content = self.fs.list_directory("")
+                print(content)
+#                print(self.fs.filesystem)
             elif cmd == "cat":
                 if not args:
                     print("Error: Missing file path.")

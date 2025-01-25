@@ -95,17 +95,14 @@ class VirtualFS:
 
     def list_directory(self, path):
         """List the contents of a directory in the virtual filesystem."""
-        current_dir = self.filesystem
-        if path != "/":
-            parts = path.strip("/").split("/")
-            for part in parts:
-                if part in current_dir and current_dir[part]["type"] == "dir":
-                    current_dir = current_dir[part]["content"]
-                else:
-                    raise FileNotFoundError(f"Directory '{path}' not found.")
-            dir_info = self.get_current_directory_files(current_dir)
-            print(self.filesystem)
-        return dir_info
+        dirs = path.strip("/").split("/")
+        current = self.filesystem["/"]["content"]
+        result = []
+        result.append("Directories")
+        for d in dirs[:-1]:
+            if current[d]["type"] == "dir":
+                result.append(d)
+        return result
 
     def read_file(self, path):
         """Read a file from the virtual filesystem."""
