@@ -1,6 +1,5 @@
 import time
 
-
 class VirtualShell:
     def __init__(self, fs, kernel, user):
         self.fs = fs
@@ -14,7 +13,7 @@ class VirtualShell:
             command = input("$ ").strip()
             if command == "exit":
                 print("Exiting vShell...")
-                self.exit_vos()  # Gracefully shut down vOS
+                self.exit_vos()
                 break
             elif command == "help":
                 self.show_help()
@@ -42,12 +41,7 @@ class VirtualShell:
         args = parts[1:]
         try:
             if cmd == "ls":
-                path = args[0] if args else "/"
-                directory_contents = self.fs.list_directory(path)
-                if directory_contents:
-                    print("\n".join(directory_contents))
-                else:
-                    print(f"Error: Directory '{path}' not found.")
+                print(self.fs.filesystem)
             elif cmd == "cat":
                 if not args:
                     print("Error: Missing file path.")

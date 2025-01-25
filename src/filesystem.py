@@ -10,16 +10,13 @@ class VirtualFS:
     def load_filesystem(self):
         """Load or initialize the filesystem."""
         if not os.path.exists(self.fs_file):
-            # Initialize if fs_tree.txt doesn't exist
             self.filesystem = {"/": {"type": "dir", "content": {}}}
             self.populate_from_current_directory(os.getcwd())
             self.save_filesystem()
         else:
-            # Load and verify the filesystem
             with open(self.fs_file, "r") as f:
                 data = f.read()
                 self.filesystem = self.parse_filesystem(data)
-#            self.verify_and_sync_filesystem()
 
     def save_filesystem(self):
         """Save the virtual filesystem to the fs_tree.txt file."""
@@ -43,32 +40,6 @@ class VirtualFS:
                     with open(full_path, "rb") as f:
                         content = f.read()
                     self.create_file(f"{virtual_root}/{file_name}", content, is_binary=True)
-
-    def verify_and_sync_filesystem(self):
-        """Verify and synchronize the virtual filesystem with the actual current directory."""
-        current_files = self.get_current_directory_files(os.getcwd())
-        virtual_files = self.filesystem
-
-        # Remove entries no longer in the actual directory
-        for virtual_path in virtual_files:
-            if virtual_path not in current_files:
-                self.delete(f"{virtual_path}")
-
-        # Add new entries from the current directory
-        for current_path in current_files:
-            if current_path not in virtual_files:
-                full_path = os.path.join(os.getcwd(), current_path)
-                if os.path.isdir(full_path):
-                    self.create_directory(f"{current_path}")
-                else:
-                    try:
-                        with open(full_path, "r", encoding="utf-8") as f:
-                            content = f.read()
-                        self.create_file(f"{current_path}", content)
-                    except UnicodeDecodeError:
-                        with open(full_path, "rb") as f:
-                            content = f.read()
-                        self.create_file(f"{current_path}", content, is_binary=True)
 
     def get_current_directory_files(self, path):
         """List files and directories in the current directory."""
@@ -124,7 +95,6 @@ class VirtualFS:
 
     def list_directory(self, path):
         """List the contents of a directory in the virtual filesystem."""
-        # Navigate to the specified directory in the parsed filesystem
         current_dir = self.filesystem
         if path != "/":
             parts = path.strip("/").split("/")
@@ -133,7 +103,9 @@ class VirtualFS:
                     current_dir = current_dir[part]["content"]
                 else:
                     raise FileNotFoundError(f"Directory '{path}' not found.")
-        return sorted(current_dir.items)
+            dir_info = self.get_current_directory_files(current_dir)
+            print(self.filesystem)
+        return dir_info
 
     def read_file(self, path):
         """Read a file from the virtual filesystem."""
