@@ -68,7 +68,10 @@ class VirtualKernel:
                     print(f"Permission denied: 'root' cannot kill kernel process '{name}'.")
                     return False
                 if user == "kernel" or process["user"] == user or user == "root":
-                    print(f"Process '{name}' owned by '{process['user']}' has been killed by '{user}'.")
+                    for i in self.processes:
+                        print(".")
+                        time.sleep(0.1)
+#                    print(f"Process '{name}' owned by '{process['user']}' has been killed by '{user}'.")
                     self.processes.remove(process)
                     return True
         print(f"Process '{name}' not found.")

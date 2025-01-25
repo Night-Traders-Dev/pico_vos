@@ -1,8 +1,9 @@
+import sys
 import time
+
 from filesystem import VirtualFS
 from kernel import VirtualKernel
 from shell import VirtualShell
-import sys
 
 
 class vOS:
@@ -14,19 +15,17 @@ class vOS:
         self.shell = VirtualShell(self.fs, self.kernel, self.user)
 
         # Register core system processes
-        print("Starting Kernel Process...")
+        print("Loading Kernel...\n\n")
         self.kernel.create_process("kernel", lambda: None, user="kernel", system=True)
 
         print("Kernel: Starting VirtualFS...")
         self.kernel.create_process("filesystem", lambda: None, user="kernel", system=True)
 
         print("Kernel: Starting VirtualShell...")
-        self.kernel.create_process("shell", self.shell.start, user="kernel", system=True)
+        self.kernel.create_process("shell", self.shell.start, user="root", system=True)
 
     def run(self):
-        print("Starting vOS...")
-        print("vOS is running. Type 'exit' in the shell to shut down.")
-
+        print("\n\nStarting vOS...\n\n")
         while True:
             # Check if the shell process is still running
             shell_process = next(

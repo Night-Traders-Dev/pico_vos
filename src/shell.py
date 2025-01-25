@@ -12,7 +12,6 @@ class VirtualShell:
             self.kernel.update_process_runtime()
             command = input("$ ").strip()
             if command == "exit":
-                print("Exiting vShell...")
                 self.exit_vos()
                 break
             elif command == "help":
@@ -43,7 +42,6 @@ class VirtualShell:
             if cmd == "ls":
                 content = self.fs.list_directory("")
                 print(content)
-#                print(self.fs.filesystem)
             elif cmd == "cat":
                 if not args:
                     print("Error: Missing file path.")
@@ -107,6 +105,6 @@ class VirtualShell:
     def exit_vos(self):
         print("vOS will now shut down...")
         self.kernel.shutdown()
-        time.sleep(1)  # Brief delay for graceful shutdown
+        time.sleep(1)
         import sys
         sys.exit(0)
