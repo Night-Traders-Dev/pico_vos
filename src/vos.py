@@ -17,7 +17,7 @@ class vOS:
         # Register core system processes
         print("Loading Kernel...\n\n")
         self.kernel.create_process("kernel", lambda: None, user="kernel", system=True)
-
+        self.kernel.boot()
         print("Kernel: Starting VirtualFS...")
         self.kernel.create_process("filesystem", lambda: None, user="kernel", system=True)
 

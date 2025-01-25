@@ -129,3 +129,7 @@ class VirtualFS:
         else:
             raise FileNotFoundError(f"Path '{path}' not found.")
         self.save_filesystem()
+
+    def file_exists(self, path):
+        """Check if a file exists in the filesystem."""
+        return path in self.filesystem and isinstance(self.filesystem[path], str)
